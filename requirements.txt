@@ -1,0 +1,4 @@
+distribute
+netifaces
+http://github.com/signed0/dpkt/tarball/master
+http://github.com/signed0/pylibpcap/tarball/master
