@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
-from os import path
 from setuptools import setup
-
-current_dir = path.dirname(path.abspath(__file__))
-requirements = open(path.join(current_dir, 'requirements.txt')).readlines()
 
 setup(name='lychee',
       version='1.0',
@@ -12,7 +8,11 @@ setup(name='lychee',
       author='signed0',
       author_email='nathan@signedzero.com',
       packages=['lychee'],
-      install_requires=list(requirements),
+      install_requires=['distribute', 'netifaces', 'dpkt>=1.7', 'pylibpcap>=0.6.4'],
+      dependency_links=[
+        'http://github.com/signed0/dpkt/tarball/master#egg=dpkt-1.7',
+        'http://github.com/signed0/pylibpcap/tarball/master#egg=pylibpcap-0.6.4'
+      ],
       entry_points={
           'console_scripts': [
               'lychee = lychee.lychee:init_sudo'
