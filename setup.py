@@ -12,7 +12,7 @@ setup(name='lychee',
       author='signed0',
       author_email='nathan@signedzero.com',
       packages=['lychee'],
-      install_requires=requirements,
+      install_requires=list(requirements),
       entry_points={
           'console_scripts': [
               'lychee = lychee.lychee:init_sudo'
