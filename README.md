@@ -5,7 +5,7 @@ A tool for analyzing HTTP requests
 
 ## Config
 
-Create `~/.lychee.ini`
+Create `~/.lychee`
 
 Containing:
 
