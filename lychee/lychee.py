@@ -9,7 +9,7 @@ from ConfigParser import SafeConfigParser
 
 from network_listener import NetworkFileListener
 
-CONFIG_FILE = '~/.lychee.ini'
+CONFIG_FILE = '~/.lychee'
 
 def init_sudo():
 	if os.geteuid() == 0:
