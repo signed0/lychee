@@ -120,8 +120,8 @@ class Lychee(object):
         logging.info('Writing file %s' % out_file)
 
         with open(out_file, 'w') as fp:
-            for b in f.bytes:
-                fp.write(b)
+            fp.write(f.content.getvalue())
+            f.content.close()
 
             os.fchown(fp.fileno(), self.user.pw_uid, self.user.pw_gid)
 

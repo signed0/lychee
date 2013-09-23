@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from operator import attrgetter
 import logging
+import StringIO
 import struct
 
 import dpkt
@@ -168,7 +169,7 @@ class NetworkFileListener(object):
             _msg = "Successfully observed a file with %i bytes and mime-type %s"
             logging.info(_msg % (stream.http_content_length, stream.headers.get('content-type', '')))
 
-            f = RawFile(stream.bytes(), mime_type)
+            f = RawFile(stream.content, mime_type)
             self._on_file_complete(f)
 
     def _on_file_complete(self, f):
@@ -207,8 +208,8 @@ def parse_flags(flags):
 
 class RawFile(object):
 
-    def __init__(self, data, mime_type):
-        self.bytes = data
+    def __init__(self, content, mime_type):
+        self.content = content
         self.mime_type = mime_type
 
 
@@ -218,7 +219,7 @@ class TcpStream(object):
         self.id = id
         self.buffer = {}
 
-        self.packet_buffer = []
+        self.packets = None
 
         self.base_seq = None
         self.next_seq = None
@@ -242,7 +243,7 @@ class TcpStream(object):
         #vals.append(parse_flags(packet.flags))
 
         if self.base_seq is None:
-            # we do not yet know the first
+            # we do not yet know the first seq
 
             if packet.data.startswith('HTTP'):
                 self.is_http = True
@@ -261,17 +262,18 @@ class TcpStream(object):
                 #out of order packet
                 self.buffer[packet.seq] = packet
 
-                # if the buffer grows to be bigger than 2K assume something went wrong
+                # if the buffer grows to be > than 2K assume something went wrong
                 if len(self.buffer) > 2000:
                     self.is_finished = True
                     self.is_valid = False
-                    logging.error('Packet buffer filled up')
+                    logging.error("Packet buffer filled up")
 
     def rel_seq(self, packet):
         return packet.seq - self.base_seq
 
-    def bytes(self):
-        return self.packet_buffer
+    @property
+    def content(self):
+        return self.packets
 
     @property
     def progress(self):
@@ -299,7 +301,6 @@ class TcpStream(object):
         """Looks in the buffer to see if we have the next packet, if so append
         it and continue till there are no packets left.
         """
-
         count = 0
         for packet in self.remove_buffered_packets():
             self._append_packet(packet)
@@ -324,7 +325,9 @@ class TcpStream(object):
         self.next_seq += len(packet.data)
 
         if self.headers is not None:
-            self.packet_buffer.append(packet.data)
+            if self.packets is None:
+                self.packets = StringIO.StringIO()
+            self.packets.write(packet.data)
             self.http_bytes_loaded += len(packet.data)
         else:
             self.header_data += packet.data
@@ -334,7 +337,9 @@ class TcpStream(object):
             if http.has_complete_headers(self.header_data):
                 resp = http.parse_response(self.header_data)
                 self.header_data = None
-                self.packet_buffer.append(resp['body'])
+                if self.packets is None:
+                    self.packets = StringIO.StringIO()
+                self.packets.write(resp['body'])
                 self.headers = resp['headers']
                 self.http_bytes_loaded = len(resp['body'])
 
