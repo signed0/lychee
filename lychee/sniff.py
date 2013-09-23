@@ -89,6 +89,7 @@ def create_pypcap_wrapper():
 
 def create_libpcap_wrapper():
     import pcap
+    from time import sleep
 
     class LibPcapWrapper(BasePcapWrapper):
         def __init__(self, interface, filters=None):
@@ -107,10 +108,17 @@ def create_libpcap_wrapper():
             def on_packet(plen, pkt, ts):
                 callback(pkt)
 
+            # Put the capture device in non-blocking mode. Without this, some
+            # of the packets for a stream will not be received till a new stream
+            # has begun.
             self.pc.setnonblock(1)
             try:
                 while True:
-                    self.pc.dispatch(1, on_packet)
+                    # Dispatch will have the capture device call the callback
+                    # once the given amount of packets have been retreived.
+                    self.pc.dispatch(100, on_packet)
+                    # This prevents this loop from using 100% CPU
+                    sleep(0.01)
             except KeyboardInterrupt:
                 logging.debug('Received keyboard interrupt.')
 
@@ -129,7 +137,7 @@ if __name__ == '__main__':
     def on_packet(pkt):
         pass
 
-    wrapper = PcapWrapper('eth0', 'tcp')
+    wrapper = PcapWrapper('en0', 'tcp')
 
     logging.debug('looping')
 
