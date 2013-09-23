@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from setuptools import setup
+
 
 setup(name='lychee',
       version='1.0',
@@ -14,9 +16,9 @@ setup(name='lychee',
         'http://github.com/signed0/pylibpcap/tarball/master#egg=pylibpcap-0.6.4'
       ],
       entry_points={
-          'console_scripts': [
-              'lychee = lychee.lychee:init_sudo'
-          ]
+        'console_scripts': [
+        'lychee = lychee.lychee:init_sudo'
+        ]
       },
       zip_safe=False
       )
