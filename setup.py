@@ -3,9 +3,10 @@
 
 from setuptools import setup
 
+from lychee import __version__
 
 setup(name='lychee',
-      version='1.0',
+      version=__version__,
       description='A tool for analyzing HTTP requests',
       author='signed0',
       author_email='nathan@signedzero.com',
