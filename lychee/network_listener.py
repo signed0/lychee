@@ -25,7 +25,7 @@ class NetworkFileListener(object):
 
     def __init__(self, interface=None, mime_types=None):
         self.pc = None
-        self.on_file_downlaoded = None
+        self.on_file_complete = None
         self.packet_streams = {}
 
         self.local_ips = self.detect_local_ips()
@@ -172,8 +172,8 @@ class NetworkFileListener(object):
             self._on_file_complete(f)
 
     def _on_file_complete(self, f):
-        if self.on_file_downlaoded is not None:
-            self.on_file_downlaoded(f)
+        if self.on_file_complete is not None:
+            self.on_file_complete(f)
 
 
 def iter_packets(iterable):

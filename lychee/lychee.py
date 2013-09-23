@@ -1,48 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os, pwd
-from datetime import datetime
-import mimetypes
-import logging
-import argparse
 from ConfigParser import SafeConfigParser
+from datetime import datetime
+import argparse
+import logging
+import mimetypes
+import sys, os, pwd
 
 from network_listener import NetworkFileListener
 
+
 CONFIG_FILE = '~/.lychee'
 
-def init_sudo():
-    if os.geteuid() == 0:
-        # this is running as root
-        main()
-    else:
-        print "You must be root to run this script."
 
-        args = sys.argv
-        if '--user' not in args:
-            user = pwd.getpwuid(os.geteuid())
-            args.extend(['--user', user.pw_name])
-
-        import subprocess
-        subprocess.call(['sudo'] + args)
-
-def main():
+def parse_options():
     parser = argparse.ArgumentParser(description='Lychee')
     parser.add_argument('--debug',
                         dest='debug',
                         action='store_true',
                         default=False,
-                        help='enable debug output'
+                        help="enable debug output"
                         )
     parser.add_argument('--interface',
                         dest='interface',
                         default=None,
-                        help='Change the interface to listen to')
-    parser.add_argument('--user',
-                        dest='user',
-                        required=True,
-                        default='root',
-                        help='the owner of saved files')
+                        help="the network interface to listen to")
     options = parser.parse_args()
 
     if options.debug:
@@ -53,7 +35,7 @@ def main():
     config = SafeConfigParser()
     config.read(os.path.expanduser(CONFIG_FILE))
 
-    mime_types = config.get("Filters", "mime_types")
+    mime_types = config.get('Filters', 'mime_types')
     if mime_types is not None:
         mime_types = mime_types.split(',')
         mime_types = [s.lower().strip() for s in mime_types]
@@ -61,7 +43,7 @@ def main():
 
     options.output_dir = config.get('Output', 'directory')
     if options.output_dir is None:
-        raise Exception('Output directory must be set')
+        raise Exception("Output directory must be set")
 
     options.output_dir = os.path.expanduser(options.output_dir)
 
@@ -71,32 +53,49 @@ def main():
         else:
             options.interface = 'en0'
 
-    l = Lychee(options)
-    l.start()
+    return options
+
+
+def main():
+    if os.geteuid() == 0:
+        # this is running as root
+        # since this was run via sudo the actual user will be in an ENV variable
+        user = pwd.getpwnam(os.getenv('SUDO_USER'))
+
+        options = parse_options()
+
+        l = Lychee(user, options)
+        l.start()
+    else:
+        print("Relaunching via sudo...")
+
+        import subprocess
+        subprocess.call(['sudo'] + sys.argv)
+
 
 class Lychee(object):
 
-    def __init__(self, options):
-        self.user = pwd.getpwnam(options.user)
+    def __init__(self, user, options):
+        self.user = user
 
-        logging.info('Running as %s.' % self.user.pw_name)
+        logging.info("Original user: '%s'" % self.user.pw_name)
 
         self.out_dir = options.output_dir
         self.ensure_path_exists(self.user, self.out_dir)
 
-        logging.info('Output Path: %s' % self.out_dir)
+        logging.info("Output path: %s" % self.out_dir)
 
         if options.mime_types is not None:
-            logging.info('Filtering mime_types: %s' % ', '.join(options.mime_types))
+            logging.info("Filtering mime_types: %s" % ', '.join(options.mime_types))
 
         self.nfl = NetworkFileListener(options.interface, options.mime_types)
-        self.nfl.on_file_downlaoded = self._on_file_loaded
+        self.nfl.on_file_complete = self._on_file_complete
 
     def ensure_path_exists(self, owner, path):
         if os.path.exists(path):
             return
 
-        logging.info('Creating Directory: %s' % path)
+        logging.info("Creating Directory: %s" % path)
 
         os.setegid(owner.pw_gid)
         os.seteuid(owner.pw_uid)
@@ -107,8 +106,7 @@ class Lychee(object):
     def start(self):
         self.nfl.start()
 
-    def _on_file_loaded(self, f):
-
+    def _on_file_complete(self, f):
         ext = mimetypes.guess_extension(f.mime_type, True)
 
         if ext is None:
@@ -129,5 +127,6 @@ class Lychee(object):
 
         logging.info('Writing complete.')
 
+
 if __name__ == '__main__':
-    init_sudo()
+    main()

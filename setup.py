@@ -17,7 +17,7 @@ setup(name='lychee',
       ],
       entry_points={
         'console_scripts': [
-        'lychee = lychee.lychee:init_sudo'
+        'lychee = lychee.lychee:main'
         ]
       },
       zip_safe=False
