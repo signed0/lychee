@@ -4,6 +4,7 @@
 
 LINE_BREAK = '\r\n'
 
+
 def strip_headers(data):
     """Puts the headers into a dictionary and returns that along with the body"""
 
@@ -12,6 +13,7 @@ def strip_headers(data):
     headers = dict(split_headers(headers_raw.split(LINE_BREAK)))
 
     return headers, body
+
 
 def split_headers(data):
     """Takes an interable of "Key: Value" and returns an interable of key, value
@@ -22,8 +24,10 @@ def split_headers(data):
     kv_gen = (h.split(':', 1) for h in data if ':' in h)
     return ((k.lower().strip(), v.strip()) for k, v in kv_gen)
 
+
 def has_complete_headers(data):
     return LINE_BREAK * 2 in data
+
 
 def parse_request(data):
     first_line, data = data.split(LINE_BREAK, 1)
@@ -39,6 +43,7 @@ def parse_request(data):
                 headers=headers,
                 body=body
                 )
+
 
 def parse_response(data):
     headers, body = strip_headers(data)

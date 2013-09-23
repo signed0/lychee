@@ -25,14 +25,15 @@ class BasePcapWrapper(object):
         if self.stats is None:
             return "No statistics availible"
         else:
-            return '%d packets received, %d packets dropped, %d packets dropped by interface' % self.stats
+            return "%d packets received, %d packets dropped, %d packets dropped by interface" % self.stats
+
 
 def detect():
     global PcapWrapper
     PcapWrapper = create_pcap_wrapper()
 
-def create_pcap_wrapper():
 
+def create_pcap_wrapper():
     creator = None
 
     try:
@@ -55,6 +56,7 @@ def create_pcap_wrapper():
         logging.info('Unable to detect a pcap library')
     else:
         return creator()
+
 
 def create_pypcap_wrapper():
     import pcap
@@ -117,6 +119,7 @@ def create_libpcap_wrapper():
             return self.pc.stats()
 
     return LibPcapWrapper
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

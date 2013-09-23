@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import logging
 from operator import attrgetter
+import logging
 import struct
 
 import dpkt
 from netifaces import interfaces, ifaddresses, AF_INET
 
 from sniff import PcapWrapper
-
 import http
 
 
@@ -17,8 +16,10 @@ FIN = dpkt.tcp.TH_FIN
 RST = dpkt.tcp.TH_RST
 PUSH = dpkt.tcp.TH_PUSH
 
+
 def ipaddr_string(addr):
     return '.'.join(str(octet) for octet in struct.unpack('B' * len(addr), addr))
+
 
 class NetworkFileListener(object):
 
@@ -29,7 +30,7 @@ class NetworkFileListener(object):
 
         self.local_ips = self.detect_local_ips()
 
-        logging.info('Local IP Addresses: %s' % ', '.join(self.local_ips))
+        logging.info("Local IP Addresses: %s" % ', '.join(self.local_ips))
 
         self.interface = interface
         self.mime_types = mime_types
@@ -65,7 +66,6 @@ class NetworkFileListener(object):
 
         if self.pc.human_stats is not None:
             logging.info(self.pc.human_stats)
-
 
     def _on_packet(self, pkt):
         try:
@@ -117,7 +117,6 @@ class NetworkFileListener(object):
             if stream is not None:
                 self._handle_response(stream, tcp)
 
-
     def _handle_request(self, connection_hash, tcp_pkt):
 
         if http.has_complete_headers(tcp_pkt.data):
@@ -156,17 +155,18 @@ class NetworkFileListener(object):
             if stream.is_valid:
                 self._on_request_complete(stream)
             else:
-                logging.error('Stream was invalid at %.1f%% with %i bytes loaded' % (stream.progress * 100, stream.http_bytes_loaded))
+                _msg = "Stream was invalid at %.1f%% with %i bytes loaded"
+                logging.error(_msg % (stream.progress * 100, stream.http_bytes_loaded))
                 if self.pc.human_stats is not None:
                     logging.info(self.pc.human_stats)
-
 
     def _on_request_complete(self, stream):
         headers = stream.headers
 
         if headers is not None:
             mime_type = headers.get('content-type')
-            logging.info('Successfully observed a file with %i bytes and mime-type %s' % (stream.http_content_length, stream.headers.get('content-type', '')))
+            _msg = "Successfully observed a file with %i bytes and mime-type %s"
+            logging.info(_msg % (stream.http_content_length, stream.headers.get('content-type', '')))
 
             f = RawFile(stream.bytes(), mime_type)
             self._on_file_complete(f)
@@ -174,6 +174,7 @@ class NetworkFileListener(object):
     def _on_file_complete(self, f):
         if self.on_file_downlaoded is not None:
             self.on_file_downlaoded(f)
+
 
 def iter_packets(iterable):
     """Sorts an iterable of packets and removes the duplicates"""
@@ -184,6 +185,7 @@ def iter_packets(iterable):
             prev = i
             yield i
 
+
 def hash_packet(eth, outbound=False):
     """Hashes a packet to determine the tcp stream it is part of """
     ip = eth.data
@@ -192,6 +194,7 @@ def hash_packet(eth, outbound=False):
     return '%s:%i' % (ipaddr_string(ip.dst if outbound else ip.src),
                       tcp.sport if outbound else tcp.dport
                       )
+
 
 def parse_flags(flags):
     result = []
@@ -207,6 +210,7 @@ class RawFile(object):
     def __init__(self, data, mime_type):
         self.bytes = data
         self.mime_type = mime_type
+
 
 class TcpStream(object):
 
@@ -281,7 +285,6 @@ class TcpStream(object):
 
     def _on_first_packet(self, packet):
         # check if this is actually the first packet
-
         if self.base_seq is None:
             self.base_seq = packet.seq
 
@@ -293,8 +296,8 @@ class TcpStream(object):
         self._check_buffer()
 
     def _check_buffer(self):
-        """Looks in the buffer to see if we have the next packet, if so append it and continue
-           till there are no packets left.
+        """Looks in the buffer to see if we have the next packet, if so append
+        it and continue till there are no packets left.
         """
 
         count = 0
@@ -307,7 +310,6 @@ class TcpStream(object):
 
     def remove_buffered_packets(self):
         """Iterates over next packets in the buffer and removes them"""
-
         seq = self.next_seq
         while True:
             p = self.buffer.pop(seq, None)
@@ -319,7 +321,6 @@ class TcpStream(object):
 
     def _append_packet(self, packet):
         """Appends a packet to the end of the list of received packets and processes it"""
-
         self.next_seq += len(packet.data)
 
         if self.headers is not None:
@@ -327,7 +328,6 @@ class TcpStream(object):
             self.http_bytes_loaded += len(packet.data)
         else:
             self.header_data += packet.data
-
 
         # check if we have enough packets for the entire http header
         if self.is_http and self.headers is None:
@@ -346,7 +346,7 @@ class TcpStream(object):
             if self.http_content_length == self.http_bytes_loaded:
                 self.is_finished = True
             elif self.http_content_length < self.http_bytes_loaded:
-                logging.error('Received data was longer than the content length header')
+                logging.error("Received data was longer than the content length header")
                 self.is_valid = False
                 self.is_finished = True
 
